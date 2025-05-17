@@ -1,0 +1,10 @@
+Roket1#Dunya#Mars#01.01.2023#50
+Roket2#Mars#Dunya#01.01.2023#18
+Roket3#Venus#Jupiter#01.01.2023#25
+Roket4#Dunya#Saturn#02.01.2023#30
+Roket5#Mars#Venus#03.01.2023#22
+Roket6#Jupiter#Saturn#01.01.2023#15
+Roket7#Saturn#Neptun#02.01.2023#28
+Roket8#Dunya#Pluton#04.01.2023#35
+Roket9#Venus#Merkur#05.01.2023#12
+Roket10#Mars#Jupiter#03.01.2023#27
