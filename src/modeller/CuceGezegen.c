@@ -1,6 +1,15 @@
-#include "modeller/CuceGezegen.h"
-#include "modeller/Gezegen.h"
+#include "../../include/modeller/CuceGezegen.h"
+#include <stdlib.h>
+#include <string.h>
 
-Gezegen* cuce_yarat(const char* isim, int saat_gun, Zaman tarih) {
-    return gezegen_yarat(isim, CUCE, saat_gun, tarih);
+Gezegen* cuce_yarat(const char* isim, double sg, double z) {
+    Gezegen* g = (Gezegen*)malloc(sizeof(Gezegen));
+    if (g == NULL) return NULL;
+    
+    g->isim = strdup(isim);
+    g->sicaklik_gucu = sg;
+    g->zehirlilik = z;
+    g->tip = CUCE;
+    
+    return g;
 }

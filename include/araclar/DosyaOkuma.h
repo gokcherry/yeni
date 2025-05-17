@@ -1,19 +1,12 @@
-// === File: include/araclar/DosyaOkuma.h ===
-#ifndef DOSYAOKUMA_H
-#define DOSYAOKUMA_H
+#ifndef DOSYA_OKUMA_H
+#define DOSYA_OKUMA_H
 
-#include "modeller/Kisi.h"
-#include "modeller/UzayGemisi.h"
-#include "modeller/Gezegen.h"
-#include "modeller/Zaman.h"
+#include <stdio.h>
+#include "../modeller/Kisi.h"
+#include "../modeller/Gezegen.h"
+#include "../modeller/UzayGemisi.h"
+#include "../simulasyon/Simulasyon.h"
 
-typedef struct {
-    Kisi** kisiler; int kisi_say;
-    UzayAraci** araclar; int arac_say;
-    Gezegen** gezegenler; int gezegen_say;
-} Veri;
+void veri_oku(const char* dosya_yolu, Simulasyon* sim);
 
-Veri* veri_oku(const char* kisi_f, const char* arac_f, const char* gezegen_f);
-void veri_yok_et(Veri* v);
-
-#endif // DOSYAOKUMA_H
+#endif // DOSYA_OKUMA_H

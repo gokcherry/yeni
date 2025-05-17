@@ -1,9 +1,8 @@
-// === File: include/modeller/GazDeviGezegen.h ===
-#ifndef GAZDEVIGEZEGEN_H
-#define GAZDEVIGEZEGEN_H
+#ifndef GAZ_DEVI_GEZEGEN_H
+#define GAZ_DEVI_GEZEGEN_H
 
-#include "modeller/Gezegen.h"
+#include "Gezegen.h"
 
-Gezegen* gaz_devi_yarat(const char* isim, int saat_gun, Zaman tarih);
+Gezegen* gaz_devi_yarat(const char* isim, double sicaklik_gucu, double zehirlilik);
 
-#endif // GAZDEVIGEZEGEN_H
+#endif // GAZ_DEVI_GEZEGEN_H

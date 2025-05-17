@@ -1,45 +1,74 @@
-#include "modeller/UzayGemisi.h"
+#include "../../include/modeller/UzayGemisi.h"
 #include <stdlib.h>
 #include <string.h>
 
-UzayAraci* arac_yarat(const char* isim, Gezegen* c, Gezegen* v, Zaman ct, double mesafe) {
-    UzayAraci* a = malloc(sizeof(UzayAraci));
+
+UzayAraci* arac_yarat(const char* isim, AracTipi tip, int max_yolcu, double yakit, Gezegen* hedef) {
+    UzayAraci* a = (UzayAraci*)malloc(sizeof(UzayAraci));
+    if (a == NULL) return NULL;
+    
     a->isim = strdup(isim);
-    a->cikis = c;
-    a->varis = v;
-    a->cikis_tarihi = ct;
-    a->mesafe_saat = mesafe;
-    a->kalan_sure = mesafe;
-    a->yolcular = NULL;
-    a->yolcu_say = 0;
-    a->kapasite = 100;  // İstediğiniz gibi ayarlayabilirsiniz
-    a->yolda = 0;
-    a->imha = 0;
+    a->tip = tip;
+    a->max_yolcu = max_yolcu;
+    a->yolcu_sayisi = 0;
+    a->yakit = yakit;
+    a->hedef = hedef;
+    
+    // Yolcu dizisi için bellek ayır
+    a->yolcular = (Kisi**)malloc(sizeof(Kisi*) * max_yolcu);
+    if (a->yolcular == NULL) {
+        free(a->isim);
+        free(a);
+        return NULL;
+    }
+    
+    // Yolcu dizisini başlangıçta NULL ile doldur
+    for (int i = 0; i < max_yolcu; i++) {
+        a->yolcular[i] = NULL;
+    }
+    
     return a;
 }
 
-void arac_yolcu_ekle(UzayAraci* a, Kisi* k) {
-    a->yolcular = realloc(a->yolcular, sizeof(Kisi*) * (a->yolcu_say + 1));
-    a->yolcular[a->yolcu_say++] = k;
+void arac_yoket(UzayAraci* a) {
+    if (a) {
+        free(a->isim);
+        if (a->yolcular) {
+            free(a->yolcular);
+        }
+        free(a);
+    }
 }
 
-void arac_guncelle(UzayAraci* a) {
-    if (a->imha) return;
-    if (a->yolda) {
-        a->kalan_sure -= 1.0;
-        if (a->kalan_sure <= 0) {
-            a->kalan_sure = 0;
-            a->yolda = 0;
-            // Varış anındaki tarihe kaydet
-            a->varis_tarihi = a->varis->tarih;
-            // Varış gezegenine nüfus ekle
-            a->varis->nufus += a->yolcu_say;
+void arac_yolcu_ekle(UzayAraci* a, Kisi* k) {
+    if (!a || !k || a->yolcu_sayisi >= a->max_yolcu) return;
+    
+    // Boş bir slot ara
+    for (int i = 0; i < a->max_yolcu; i++) {
+        if (a->yolcular[i] == NULL) {
+            a->yolcular[i] = k;
+            a->yolcu_sayisi++;
+            break;
         }
     }
 }
 
-void arac_yok_et(UzayAraci* a) {
-    free(a->isim);
-    free(a->yolcular);
-    free(a);
+int arac_yolcu_cikar(UzayAraci* a, Kisi* k) {
+    if (!a || !k) return 0;
+    
+    for (int i = 0; i < a->max_yolcu; i++) {
+        if (a->yolcular[i] == k) {
+            a->yolcular[i] = NULL;
+            a->yolcu_sayisi--;
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
+void arac_hedef_guncelle(UzayAraci* a, Gezegen* g) {
+    if (a) {
+        a->hedef = g;
+    }
 }

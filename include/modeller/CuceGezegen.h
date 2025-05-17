@@ -1,9 +1,8 @@
-// === File: include/modeller/CuceGezegen.h ===
-#ifndef CUCEGEZEGEN_H
-#define CUCEGEZEGEN_H
+#ifndef CUCE_GEZEGEN_H
+#define CUCE_GEZEGEN_H
 
-#include "modeller/Gezegen.h"
+#include "Gezegen.h"
 
-Gezegen* cuce_yarat(const char* isim, int saat_gun, Zaman tarih);
+Gezegen* cuce_yarat(const char* isim, double sicaklik_gucu, double zehirlilik);
 
-#endif // CUCEGEZEGEN_H
+#endif // CUCE_GEZEGEN_H

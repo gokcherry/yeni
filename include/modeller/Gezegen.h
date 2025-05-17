@@ -1,21 +1,23 @@
-// === File: include/modeller/Gezegen.h ===
 #ifndef GEZEGEN_H
 #define GEZEGEN_H
 
-#include "modeller/Zaman.h"
+#include "ForwardDefs.h"
 
-enum { KAYAC, GAZ_DEVI, BUZ_DEVI, CUCE } GezegenTur;
+typedef enum {
+    KAYAC,
+    GAZ_DEVI,
+    BUZ_DEVI,
+    CUCE
+} GezegenTipi;
 
-typedef struct {
+typedef struct Gezegen {
     char* isim;
-    int tur;
-    int saat_gun;
-    Zaman tarih;
-    int nufus;
-    double yaslanma_katsayisi;
+    GezegenTipi tip;
+    double sicaklik_gucu;
+    double zehirlilik;
 } Gezegen;
 
-Gezegen* gezegen_yarat(const char* isim, int tur, int saat_gun, Zaman tarih);
-void gezegen_yok_et(Gezegen* g);
+Gezegen* gezegen_yarat(const char* isim, GezegenTipi tip, double sicaklik_gucu, double zehirlilik);
+void gezegen_yoket(Gezegen* g);
 
 #endif // GEZEGEN_H

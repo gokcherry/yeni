@@ -1,133 +1,164 @@
-#include "simulasyon/Simulasyon.h"
-#include "modeller/Zaman.h"
-#include "modeller/Gezegen.h"
-#include "modeller/Kisi.h"
-#include "modeller/UzayGemisi.h"
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <stdio.h>
+#include "../../include/simulasyon/Simulasyon.h"
+#include "../../include/modeller/Kisi.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>    // for strdup
 
-static int bitis_kontrol(const Simulasyon* s) {
-    for (int i = 0; i < s->veri->arac_say; i++) {
-        UzayAraci* a = s->veri->araclar[i];
-        if (!a->imha && (a->yolda || a->kalan_sure > 0)) 
-            return 0;
+Simulasyon* simulasyon_yarat(int max_gezegen, int max_arac, int max_kisi) {
+    Simulasyon* sim = (Simulasyon*)malloc(sizeof(Simulasyon));
+    if (sim == NULL) return NULL;
+    
+    sim->zaman = zaman_yarat(2150, 1, 1);
+    if (sim->zaman == NULL) {
+        free(sim);
+        return NULL;
     }
-    return 1;
+    
+    sim->max_gezegen = max_gezegen;
+    sim->gezegen_sayisi = 0;
+    sim->gezegenler = (Gezegen**)malloc(sizeof(Gezegen*) * max_gezegen);
+    if (sim->gezegenler == NULL) {
+        zaman_yoket(sim->zaman);
+        free(sim);
+        return NULL;
+    }
+    
+    sim->max_arac = max_arac;
+    sim->arac_sayisi = 0;
+    sim->araclar = (UzayAraci**)malloc(sizeof(UzayAraci*) * max_arac);
+    if (sim->araclar == NULL) {
+        free(sim->gezegenler);
+        zaman_yoket(sim->zaman);
+        free(sim);
+        return NULL;
+    }
+    
+    sim->max_kisi = max_kisi;
+    sim->kisi_sayisi = 0;
+    sim->kisiler = (Kisi**)malloc(sizeof(Kisi*) * max_kisi);
+    if (sim->kisiler == NULL) {
+        free(sim->araclar);
+        free(sim->gezegenler);
+        zaman_yoket(sim->zaman);
+        free(sim);
+        return NULL;
+    }
+    
+    return sim;
 }
 
-// Gezegen ve araç durumunu ekrana basan yardımcı fonksiyon
-static void durum_yazdir(const Simulasyon* s) {
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
-#endif
-
-    // Gezegenler
-    printf("Gezegenler:\n            ");
-    for (int i = 0; i < s->veri->gezegen_say; i++)
-        printf("  --- %-3s ---", s->veri->gezegenler[i]->isim);
-    printf("\nTarih       ");
-    for (int i = 0; i < s->veri->gezegen_say; i++) {
-        char* ts = zaman_to_string(&s->veri->gezegenler[i]->tarih);
-        printf(" %-16s", ts);
-        free(ts);
-    }
-    printf("\nNüfus       ");
-    for (int i = 0; i < s->veri->gezegen_say; i++)
-        printf(" %-16d", s->veri->gezegenler[i]->nufus);
-    printf("\n\n");
-
-    // Uzay Araçları
-    printf("Uzay Araçları:\n");
-    printf("%-10s %-10s %-6s %-6s %-20s %s\n",
-        "Araç Adı","Durum","Çıkış","Varış","Hedefe Kalan Saat","Hedefe Varacağı Tarih");
-    for (int i = 0; i < s->veri->arac_say; i++) {
-        UzayAraci* a = s->veri->araclar[i];
-        const char* durum;
-        if (a->imha) {
-            durum = "İMHA";
-        } else if (a->yolda) {
-            durum = "YOLDA";
-        } else {
-            // Henüz kalkış zamanı gelmediyse
-            if (zaman_karsilastir(&a->cikis->tarih, &a->cikis_tarihi) < 0)
-                durum = "Bekliyor";
-            else
-                durum = "Vardı";
+void simulasyon_yoket(Simulasyon* sim) {
+    if (sim) {
+        // Tüm gezegenleri temizle
+        for (int i = 0; i < sim->gezegen_sayisi; i++) {
+            gezegen_yoket(sim->gezegenler[i]);
         }
-
-        char vt[11];
-        if (a->imha)
-            strcpy(vt, "--");
-        else
-            sprintf(vt, "%02d.%02d.%04d",
-                a->varis->tarih.gun, a->varis->tarih.ay, a->varis->tarih.yil);
-
-        printf("%-10s %-10s %-6s %-6s %-20.0f %s\n",
-            a->isim, durum,
-            a->cikis->isim, a->varis->isim,
-            a->kalan_sure, vt);
+        free(sim->gezegenler);
+        
+        // Tüm araçları temizle
+        for (int i = 0; i < sim->arac_sayisi; i++) {
+            arac_yoket(sim->araclar[i]);
+        }
+        free(sim->araclar);
+        
+        // Tüm kişileri temizle
+        for (int i = 0; i < sim->kisi_sayisi; i++) {
+            kisi_yoket(sim->kisiler[i]);
+        }
+        free(sim->kisiler);
+        
+        zaman_yoket(sim->zaman);
+        free(sim);
     }
 }
 
-Simulasyon* simulasyon_yarat(Veri* v) {
-    Simulasyon* s = malloc(sizeof(Simulasyon));
-    s->veri = v;
-    // Başlangıç nüfus ataması
-    for (int i = 0; i < v->kisi_say; i++) {
-        Kisi* k = v->kisiler[i];
-        if (k->yasiyor && !k->arac->yolda)
-            k->arac->cikis->nufus++;
-    }
-    return s;
+void simulasyon_gezegen_ekle(Simulasyon* sim, Gezegen* g) {
+    if (!sim || !g || sim->gezegen_sayisi >= sim->max_gezegen) return;
+    
+    sim->gezegenler[sim->gezegen_sayisi++] = g;
 }
 
-void simulasyon_calistir(Simulasyon* s) {
-    // Döngü; bitmeyene kadar iterasyon başına 1 saat
-    while (!bitis_kontrol(s)) {
-        // Gezegen saatlerini ilerlet
-        for (int i = 0; i < s->veri->gezegen_say; i++) {
-            Gezegen* g = s->veri->gezegenler[i];
-            zaman_arttir(&g->tarih, g->saat_gun);
-        }
-        // Araçları güncelle (kalkış ve varış)
-        for (int i = 0; i < s->veri->arac_say; i++) {
-            UzayAraci* a = s->veri->araclar[i];
-            if (!a->yolda && !a->imha
-                && zaman_karsilastir(&a->cikis->tarih, &a->cikis_tarihi) == 0) {
-                a->yolda = 1;
-                a->cikis->nufus -= a->yolcu_say;
-            }
-            arac_guncelle(a);
-        }
-        // Kişi yaşlanma ve ölüm kontrolleri
-        for (int i = 0; i < s->veri->kisi_say; i++) {
-            Kisi* k = s->veri->kisiler[i];
+void simulasyon_arac_ekle(Simulasyon* sim, UzayAraci* a) {
+    if (!sim || !a || sim->arac_sayisi >= sim->max_arac) return;
+    
+    sim->araclar[sim->arac_sayisi++] = a;
+}
+
+void simulasyon_kisi_ekle(Simulasyon* sim, Kisi* k) {
+    if (!sim || !k || sim->kisi_sayisi >= sim->max_kisi) return;
+    
+    sim->kisiler[sim->kisi_sayisi++] = k;
+}
+
+void simulasyon_calistir(Simulasyon* sim, int gun_sayisi, FILE* cikti_dosyasi) {
+    if (!sim || !cikti_dosyasi) return;
+    
+    fprintf(cikti_dosyasi, "Simulasyon başlıyor...\n");
+    fprintf(cikti_dosyasi, "Başlangıç tarihi: %d/%d/%d\n", 
+            sim->zaman->gun, sim->zaman->ay, sim->zaman->yil);
+    
+    // Her gün için simulasyonu çalıştır
+    for (int gun = 1; gun <= gun_sayisi; gun++) {
+        // Zamanı ilerlet
+        zaman_ilerlet(sim->zaman, 1);
+        
+        fprintf(cikti_dosyasi, "\nGün %d (%d/%d/%d):\n", 
+                gun, sim->zaman->gun, sim->zaman->ay, sim->zaman->yil);
+        
+        // Kişilerin durumunu güncelle
+        for (int i = 0; i < sim->kisi_sayisi; i++) {
+            Kisi* k = sim->kisiler[i];
+            
+            // Eğer kişi hayatta değilse devam et
             if (!k->yasiyor) continue;
-            double f = k->arac->yolda ? 1.0 : k->arac->cikis->yaslanma_katsayisi;
-            kisi_yaslandir(k, f);
-            if (!k->yasiyor) {
-                if (!k->arac->yolda)
-                    k->arac->cikis->nufus--;
-                int hayatta = 0;
-                for (int j = 0; j < k->arac->yolcu_say; j++)
-                    if (k->arac->yolcular[j]->yasiyor) hayatta++;
-                if (!hayatta)
-                    k->arac->imha = 1;
+            
+            // Kalan ömrü azalt
+            k->kalan_omur -= 1.0;
+            
+            // Eğer kalan ömür 0'a ulaştıysa kişi ölür
+            if (k->kalan_omur <= 0) {
+                k->yasiyor = 0;
+                fprintf(cikti_dosyasi, "- %s öldü (yaş: %d).\n", k->isim, k->yas);
+            }
+            
+            // Kişinin yaşını güncelle
+            // Her yıl bir yaş ekle (30 günde bir)
+            if (gun % 30 == 0) {
+                k->yas++;
             }
         }
-        // Güncel durumu yazdır
-        durum_yazdir(s);
+        
+        // Araçların durumlarını güncelle ve raporla
+        for (int i = 0; i < sim->arac_sayisi; i++) {
+            UzayAraci* a = sim->araclar[i];
+            
+            // Yakıt tüketimi simülasyonu
+            a->yakit -= 0.5;
+            if (a->yakit < 0) a->yakit = 0;
+            
+            // Hayatta kalan yolcu sayısını hesapla
+            int hayatta = 0;
+            for (int j = 0; j < a->max_yolcu; j++) {
+                if (a->yolcular[j] && a->yolcular[j]->yasiyor) hayatta++;
+            }
+            
+            fprintf(cikti_dosyasi, "- %s: %d/%d yolcu hayatta, %.2f birim yakıt kaldı.\n", 
+                   a->isim, hayatta, a->yolcu_sayisi, a->yakit);
+        }
     }
-
-    // Son durum raporu
-    durum_yazdir(s);
-}
-
-void simulasyon_yok_et(Simulasyon* s) {
-    free(s);
+    
+    fprintf(cikti_dosyasi, "\nSimulasyon tamamlandı.\n");
+    fprintf(cikti_dosyasi, "Bitiş tarihi: %d/%d/%d\n", 
+            sim->zaman->gun, sim->zaman->ay, sim->zaman->yil);
+    
+    // Hayatta kalan kişilerin durumunu raporla
+    int hayatta_kalanlar = 0;
+    for (int i = 0; i < sim->kisi_sayisi; i++) {
+        if (sim->kisiler[i]->yasiyor) hayatta_kalanlar++;
+    }
+    
+    fprintf(cikti_dosyasi, "Toplam kişi sayısı: %d\n", sim->kisi_sayisi);
+    fprintf(cikti_dosyasi, "Hayatta kalanlar: %d (%%%d)\n", 
+            hayatta_kalanlar, 
+            (sim->kisi_sayisi > 0) ? (hayatta_kalanlar * 100 / sim->kisi_sayisi) : 0);
 }
