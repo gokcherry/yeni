@@ -1,51 +1,47 @@
-#include "../include/simulasyon/Simulasyon.h"
-#include "../include/araclar/DosyaOkuma.h"
+#include "Simulasyon.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 int main(int argc, char* argv[]) {
-    // Parametreleri kontrol et
-    if (argc != 3) {
-        printf("Kullanım: %s <giris_dosyasi> <gun_sayisi>\n", argv[0]);
-        return 1;
+    if (argc != 5) {
+        printf("Usage: %s <gezegen_dosyasi> <arac_dosyasi> <kisi_dosyasi> <gun_sayisi>\n",
+               argv[0]);
+        return EXIT_FAILURE;
     }
-    
-    const char* giris_dosyasi = argv[1];
-    int gun_sayisi = atoi(argv[2]);
-    
-    // Geçerli gün sayısı kontrolü
-    if (gun_sayisi <= 0) {
-        printf("Hata: Gün sayısı pozitif bir tamsayı olmalıdır.\n");
-        return 1;
-    }
-    
-    // Simulasyonu oluştur
-    Simulasyon* sim = simulasyon_yarat(100, 50, 200);
+
+    /* Simülasyonu oluştur */
+    Simulasyon* sim = simulasyon_olustur(
+        /* max gezegen */ 10,
+        /* max arac   */ 10,
+        /* max kisi   */ 100
+    );
     if (!sim) {
-        printf("Hata: Simulasyon oluşturulamadı.\n");
-        return 1;
+        fprintf(stderr, "Error: simulasyon olusturulamadi\n");
+        return EXIT_FAILURE;
     }
-    
-    // Giriş dosyasından verileri oku
-    veri_oku(giris_dosyasi, sim);
-    
-    // Çıktı dosyasını aç
-    FILE* cikti_dosyasi = fopen("simulasyon_sonuc.txt", "w");
-    if (!cikti_dosyasi) {
-        printf("Hata: Çıktı dosyası oluşturulamadı.\n");
+
+    /* Girdi dosyalarından verileri oku */
+   // sabit dosya yolları kullanmak istersek:
+    simulasyon_gezegen_oku("data/Gezegenler.txt", sim);
+    simulasyon_arac_oku   ("data/Araclar.txt",   sim);
+    simulasyon_kisi_oku   ("data/Kisiler.txt",   sim);
+
+
+    /* Çıktı dosyasını aç */
+    FILE* out = fopen("simulasyon_sonuc.txt", "w");
+    if (!out) {
+        perror("Error opening output file");
         simulasyon_yoket(sim);
-        return 1;
+        return EXIT_FAILURE;
     }
-    
-    // Simulasyonu çalıştır
-    simulasyon_calistir(sim, gun_sayisi, cikti_dosyasi);
-    
-    // Kaynakları temizle
-    fclose(cikti_dosyasi);
+
+    /* Simülasyonu çalıştır */
+    simulasyon_calistir(sim, atoi(argv[4]), out);
+
+    /* Kaynakları temizle */
+    fclose(out);
     simulasyon_yoket(sim);
-    
-    printf("Simulasyon tamamlandı. Sonuçlar 'simulasyon_sonuc.txt' dosyasında.\n");
-    
-    return 0;
+
+    printf("Simulation completed. Results are in 'simulasyon_sonuc.txt'.\n");
+    return EXIT_SUCCESS;
 }
