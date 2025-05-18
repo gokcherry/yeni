@@ -1,3 +1,4 @@
+
 #include "DosyaOkuma.h"
 #include "Simulasyon.h"
 #include "KayacGezegen.h"
@@ -12,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Yardımcı: isimle gezegeni bulur
 static Gezegen* bul_gezegen(Simulasyon* sim, const char* isim) {
     for (int i = 0; i < sim->gezegen_sayisi; i++) {
         if (strcmp(sim->gezegenler[i]->isim, isim) == 0)
@@ -21,7 +21,6 @@ static Gezegen* bul_gezegen(Simulasyon* sim, const char* isim) {
     return NULL;
 }
 
-// Yardımcı: isimle aracı bulur
 static UzayAraci* bul_arac(Simulasyon* sim, const char* isim) {
     for (int i = 0; i < sim->arac_sayisi; i++) {
         if (strcmp(sim->araclar[i]->isim, isim) == 0)
@@ -39,18 +38,16 @@ void veri_oku(const char* dosya_yolu, Simulasyon* sim) {
 
     char satir[256];
     while (fgets(satir, sizeof(satir), dosya)) {
-        // Satır sonu karakterlerini temizle
+
         satir[strcspn(satir, "\r\n")] = '\0';
         if (!satir[0]) continue;
 
-        // Kaç alan (# ile ayrılan) var?
         int alan = 0;
         char* tmp = strdup(satir);
         for (char* t = strtok(tmp, "#"); t; t = strtok(NULL, "#"))
             alan++;
         free(tmp);
 
-        // Tokenize & field dizisi
         char* flds[5] = {0};
         char* p = strtok(satir, "#");
         for (int i = 0; p && i < alan; i++) {
@@ -112,7 +109,6 @@ void veri_oku(const char* dosya_yolu, Simulasyon* sim) {
                 zaman_yoket(cz);
             }
         }
-        // Diğer alan sayıları göz ardı edilir
     }
 
     fclose(dosya);

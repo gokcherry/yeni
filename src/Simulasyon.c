@@ -1,39 +1,18 @@
+
 #include "Simulasyon.h"
+#include "DosyaOkuma.h"    
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-// Gezegeni isimle bulur
-static Gezegen* bul_gezegen(Simulasyon* sim, const char* isim) {
-    for (int i = 0; i < sim->gezegen_sayisi; i++) {
-        if (strcmp(sim->gezegenler[i]->isim, isim) == 0)
-            return sim->gezegenler[i];
-    }
-    return NULL;
-}
-
-// Aracı isimle bulur
-static UzayAraci* bul_arac(Simulasyon* sim, const char* isim) {
-    for (int i = 0; i < sim->arac_sayisi; i++) {
-        if (strcmp(sim->araclar[i]->isim, isim) == 0)
-            return sim->araclar[i];
-    }
-    return NULL;
-}
-void simulasyon_gezegen_ekle(Simulasyon* sim, Gezegen* g) {
-    if (!sim || !g || sim->gezegen_sayisi >= sim->max_gezegen) return;
-    sim->gezegenler[sim->gezegen_sayisi++] = g;
-}
-
-void simulasyon_arac_ekle(Simulasyon* sim, UzayAraci* a) {
-    if (!sim || !a || sim->arac_sayisi >= sim->max_arac) return;
-    sim->araclar[sim->arac_sayisi++] = a;
-}
-
-void simulasyon_kisi_ekle(Simulasyon* sim, Kisi* k) {
-    if (!sim || !k || sim->kisi_sayisi >= sim->max_kisi) return;
-    sim->kisiler[sim->kisi_sayisi++] = k;
-}
+#ifdef _WIN32
+  #include <windows.h>
+  #define sleep_ms(ms) Sleep(ms)
+#else
+  #include <unistd.h>
+  #define sleep_ms(ms) usleep((ms) * 1000)
+#endif
 
 
 Simulasyon* simulasyon_olustur(int max_gezegen,
@@ -42,26 +21,25 @@ Simulasyon* simulasyon_olustur(int max_gezegen,
     Simulasyon* sim = calloc(1, sizeof(Simulasyon));
     if (!sim) return NULL;
 
-    sim->zaman         = zaman_olustur(2150, 1, 1);
+    sim->zaman = zaman_olustur(2150, 1, 1);
 
-    sim->max_gezegen   = max_gezegen;
-    sim->gezegen_sayisi= 0;
-    sim->gezegenler    = malloc(sizeof(Gezegen*) * max_gezegen);
+    sim->max_gezegen    = max_gezegen;
+    sim->gezegen_sayisi = 0;
+    sim->gezegenler     = malloc(sizeof(Gezegen*) * max_gezegen);
 
-    sim->max_arac      = max_arac;
-    sim->arac_sayisi   = 0;
-    sim->araclar       = malloc(sizeof(UzayAraci*) * max_arac);
+    sim->max_arac       = max_arac;
+    sim->arac_sayisi    = 0;
+    sim->araclar        = malloc(sizeof(UzayAraci*) * max_arac);
 
-    sim->max_kisi      = max_kisi;
-    sim->kisi_sayisi   = 0;
-    sim->kisiler       = malloc(sizeof(Kisi*) * max_kisi);
+    sim->max_kisi       = max_kisi;
+    sim->kisi_sayisi    = 0;
+    sim->kisiler        = malloc(sizeof(Kisi*) * max_kisi);
 
     return sim;
 }
 
 void simulasyon_yoket(Simulasyon* sim) {
     if (!sim) return;
-
     for (int i = 0; i < sim->gezegen_sayisi; i++)
         gezegen_yoket(sim->gezegenler[i]);
     free(sim->gezegenler);
@@ -78,164 +56,120 @@ void simulasyon_yoket(Simulasyon* sim) {
     free(sim);
 }
 
+
+void simulasyon_gezegen_ekle(Simulasyon* sim, Gezegen* g) {
+    if (!sim || !g || sim->gezegen_sayisi >= sim->max_gezegen) return;
+    sim->gezegenler[sim->gezegen_sayisi++] = g;
+}
+
+void simulasyon_arac_ekle(Simulasyon* sim, UzayAraci* a) {
+    if (!sim || !a || sim->arac_sayisi >= sim->max_arac) return;
+    sim->araclar[sim->arac_sayisi++] = a;
+}
+
+void simulasyon_kisi_ekle(Simulasyon* sim, Kisi* k) {
+    if (!sim || !k || sim->kisi_sayisi >= sim->max_kisi) return;
+    sim->kisiler[sim->kisi_sayisi++] = k;
+}
+
 void simulasyon_gezegen_oku(const char* path, Simulasyon* sim) {
-    FILE* f = fopen(path, "r");
-    if (!f) return;
-    char buf[256];
-    while (fgets(buf, sizeof(buf), f)) {
-        buf[strcspn(buf, "\r\n")] = '\0';
-        if (!buf[0]) continue;
-
-        char* isim    = strtok(buf, "#");
-        char* tip_s   = strtok(NULL, "#");
-        char* saat_s  = strtok(NULL, "#");
-        char* tarih_s = strtok(NULL, "#");
-        if (!isim || !tip_s || !saat_s || !tarih_s) continue;
-
-        int tip      = atoi(tip_s);
-        int gun_saat = atoi(saat_s);
-        int g, a, y;
-        sscanf(tarih_s, "%d.%d.%d", &g, &a, &y);
-        Zaman z = { .yil = y, .ay = a, .gun = g, .saat = 0 };
-
-        Gezegen* gg = NULL;
-        switch (tip) {
-            case 0: gg = kayac_gezegen_olustur(isim, gun_saat, z); break;
-            case 1: gg = gaz_devi_olustur(isim, gun_saat, z); break;
-            case 2: gg = buz_devi_olustur(isim, gun_saat, z); break;
-            case 3: gg = cuce_olustur(isim, gun_saat, z);     break;
-        }
-        if (gg) simulasyon_gezegen_ekle(sim, gg);
-    }
-    fclose(f);
+    veri_oku(path, sim);
 }
-
 void simulasyon_arac_oku(const char* path, Simulasyon* sim) {
-    FILE* f = fopen(path, "r");
-    if (!f) return;
-    char buf[256];
-    while (fgets(buf, sizeof(buf), f)) {
-        buf[strcspn(buf, "\r\n")] = '\0';
-        if (!buf[0]) continue;
-
-        char* isim = strtok(buf, "#");
-        char* cis  = strtok(NULL, "#");
-        char* hedf = strtok(NULL, "#");
-        char* trs  = strtok(NULL, "#");
-        char* sstr = strtok(NULL, "#");
-        if (!isim || !cis || !hedf || !trs || !sstr) continue;
-
-        Gezegen* cikis = bul_gezegen(sim, cis);
-        Gezegen* hedef = bul_gezegen(sim, hedf);
-        int g, m, y;
-        sscanf(trs, "%d.%d.%d", &g, &m, &y);
-        Zaman* cz = zaman_olustur(y, m, g);
-        int kalan = atoi(sstr);
-
-        if (cikis && hedef) {
-            UzayAraci* ar = arac_olustur(isim, cikis, hedef, cz, kalan);
-            ar->yolcular  = calloc(sim->max_kisi, sizeof(Kisi*));
-            simulasyon_arac_ekle(sim, ar);
-        } else {
-            zaman_yoket(cz);
-        }
-    }
-    fclose(f);
+    veri_oku(path, sim);
 }
-
 void simulasyon_kisi_oku(const char* path, Simulasyon* sim) {
-    FILE* f = fopen(path, "r");
-    if (!f) return;
-    char buf[256];
-    while (fgets(buf, sizeof(buf), f)) {
-        buf[strcspn(buf, "\r\n")] = '\0';
-        if (!buf[0]) continue;
-
-        char* isim = strtok(buf, "#");
-        char* ys   = strtok(NULL, "#");
-        char* os   = strtok(NULL, "#");
-        char* arnm = strtok(NULL, "#");
-        if (!isim || !ys || !os || !arnm) continue;
-
-        int yas     = atoi(ys);
-        double omur = atof(os);
-        UzayAraci* ar = bul_arac(sim, arnm);
-        if (!ar) continue;
-
-        Kisi* k = kisi_olustur(isim, yas, omur, ar);
-        simulasyon_kisi_ekle(sim, k);
-        arac_yolcu_ekle(ar, k);
-    }
-    fclose(f);
+    veri_oku(path, sim);
 }
-void simulasyon_calistir(Simulasyon* sim,
-                         int gun_sayisi,
-                         FILE* out) {
-    // Günlük sim: her biri 24 saat
-    for (int d = 1; d <= gun_sayisi; d++) {
-        // 1 gün = 24 saat ilerlet
-        zaman_ilerlet(sim->zaman, 24);
 
-        // Araçların kalan sürelerini azalt, varışta indir
-        for (int i = 0; i < sim->arac_sayisi; i++) {
-            UzayAraci* a = sim->araclar[i];
-            if (a->kalan_sure > 0) {
-                a->kalan_sure -= 24;
-                if (a->kalan_sure <= 0) {
-                    // Varış
-                    for (int j = 0; j < a->yolcu_sayisi; j++) {
-                        Kisi* k = a->yolcular[j];
-                        k->arac      = NULL;
-                        k->bulundugu = a->hedef;
-                    }
-                    a->yolcu_sayisi = 0;
+static void ekran_temizle() {
+#ifdef _WIN32
+    system("cls");
+#else
+    printf("\033[H\033[J");
+#endif
+}
+
+static void gezegen_saatleri_ilerlet(Simulasyon* sim) {
+    for (int i = 0; i < sim->gezegen_sayisi; i++) {
+        zaman_ilerlet(&sim->gezegenler[i]->tarih, 1);
+    }
+}
+
+static void araclari_guncelle(Simulasyon* sim) {
+    for (int i = 0; i < sim->arac_sayisi; i++) {
+        UzayAraci* a = sim->araclar[i];
+        if (a->durum == ARAC_VARDI || a->durum == ARAC_IMHA) 
+            continue;
+
+        // Bekliyorsa çıkış zamanına gelince yola çık
+        if (a->durum == ARAC_BEKLIYOR &&
+            zaman_karsilastir(sim->zaman, a->cikis_tarihi) >= 0) {
+            a->durum = ARAC_YOLDA;
+        }
+
+        // Yoldaysa kalan süreyi azalt, yolcular öldüyse IMHA
+        if (a->durum == ARAC_YOLDA) {
+            a->kalan_sure--;
+            for (int j = 0; j < a->yolcu_sayisi; j++) {
+                if (!a->yolcular[j]->yasiyor) {
+                    a->durum = ARAC_IMHA;
+                    break;
+                }
+            }
+            // Varış
+            if (a->durum == ARAC_YOLDA && a->kalan_sure <= 0) {
+                a->durum = ARAC_VARDI;
+                for (int j = 0; j < a->yolcu_sayisi; j++) {
+                    Kisi* k = a->yolcular[j];
+                    k->arac      = NULL;
+                    k->bulundugu = a->hedef;
                 }
             }
         }
+    }
+}
 
-        // Kişileri yaşlandır
-        for (int i = 0; i < sim->kisi_sayisi; i++) {
-            Kisi* k = sim->kisiler[i];
-            if (!k->yasiyor) continue;
+static bool sim_bitti(Simulasyon* sim) {
+    for (int i = 0; i < sim->arac_sayisi; i++) {
+        if (sim->araclar[i]->durum == ARAC_BEKLIYOR ||
+            sim->araclar[i]->durum == ARAC_YOLDA)
+            return false;
+    }
+    return true;
+}
 
-            double aged_hours;
-            if (k->arac) {
-                // hâlâ uzayda → normal 24 saat/gün
-                aged_hours = 24.0;
-            } else if (k->bulundugu) {
-                // bulunduğu gezegenin gün uzunluğu × katsayısı
-                aged_hours = k->bulundugu->gun_saat
-                           * k->bulundugu->yaslanma_katsayisi;
-            } else {
-                aged_hours = 0;
-            }
-
-            k->kalan_omur -= aged_hours;
-            if (k->kalan_omur <= 0) {
-                k->yasiyor = 0;
-            }
-        }
+static char* eta_str(UzayAraci* a) {
+    if (a->durum == ARAC_IMHA) return strdup("--");
+    Zaman temp = a->hedef->tarih;
+    if (a->durum == ARAC_VARDI) {
+        return zaman_to_string(&temp);
     }
 
-    // ——— Çıktı: Gezegenler ———
-    fprintf(out, "Gezegenler:\n");
-    // Başlık satırı
-    fprintf(out, "%-12s", "");
-    for (int i = 0; i < sim->gezegen_sayisi; i++)
-        fprintf(out, "    --- %s ---", sim->gezegenler[i]->isim);
-    fprintf(out, "\n");
+    int hours = (a->durum == ARAC_YOLDA ? a->kalan_sure : a->toplam_sure);
+    for (int h = 0; h < hours; h++)
+        zaman_ilerlet(&temp, 1);
+    return zaman_to_string(&temp);
+}
 
-    // Tarih satırı
-    fprintf(out, "%-12s", "Tarih");
+static void yazdir(Simulasyon* sim) {
+    // Gezegenler
+    printf("Gezegenler:\n    ");
+    for (int i = 0; i < sim->gezegen_sayisi; i++)
+        printf("   --- %s ---", sim->gezegenler[i]->isim);
+    printf("\n");
+
+    // Tarihler
+    printf("Tarih      ");
     for (int i = 0; i < sim->gezegen_sayisi; i++) {
         Gezegen* g = sim->gezegenler[i];
-        fprintf(out, "   %02d.%02d.%04d",
-                g->tarih.gun, g->tarih.ay, g->tarih.yil);
+        printf("   %02d.%02d.%04d",
+               g->tarih.gun, g->tarih.ay, g->tarih.yil);
     }
-    fprintf(out, "\n");
+    printf("\n");
 
-    // Nüfus satırı
-    fprintf(out, "%-12s", "Nüfus");
+    // Nüfuslar
+    printf("Nufus      ");
     for (int i = 0; i < sim->gezegen_sayisi; i++) {
         int pop = 0;
         for (int j = 0; j < sim->kisi_sayisi; j++) {
@@ -243,40 +177,45 @@ void simulasyon_calistir(Simulasyon* sim,
             if (k->yasiyor && k->bulundugu == sim->gezegenler[i])
                 pop++;
         }
-        fprintf(out, "   %3d", pop);
+        printf("   %3d", pop);
     }
-    fprintf(out, "\n\n");
+    printf("\n\n");
 
-    // ——— Çıktı: Uzay Araçları ———
-    fprintf(out, "Uzay Araçları:\n");
-    fprintf(out, "%-8s %-8s %-8s %-8s %-10s %s\n",
-            "Araç", "Durum", "Çıkış", "Varış", "Kalan Saat", "Varış Tarih");
-
+    // Uzay Araçları
+    printf("Uzay Gemileri:\n");
+    printf("Arac Adi  Durum     Cikis   Varıs   Kalan Saat   Varıs Tarihi\n");
     for (int i = 0; i < sim->arac_sayisi; i++) {
         UzayAraci* a = sim->araclar[i];
-        const char* durum = a->kalan_sure > 0
-                            ? "Yolda"
-                            : (a->kalan_sure == 0 && a->yolcu_sayisi==0)
-                              ? "Vardı"
-                              : "Bekliyor";
-
-        // Varış tarihi: şimdi + ceil(kalan_sure/24) gün
-        Zaman eta = *sim->zaman;
-        if (a->kalan_sure > 0) {
-            int extra_days = (a->kalan_sure + 23) / 24;
-            for (int d = 0; d < extra_days; d++)
-                zaman_ilerlet(&eta, 24);
-        }
-        char* eta_s = zaman_to_string(&eta);
-
-        fprintf(out, "%-8s %-8s %-8s %-8s %5d     %s\n",
+        const char* durum_str =
+            a->durum == ARAC_BEKLIYOR ? "Bekliyor" :
+            a->durum == ARAC_YOLDA    ? "Yolda"    :
+            a->durum == ARAC_VARDI    ? "Vardi"    : "IMHA";
+        char* eta = eta_str(a);
+        printf("%-8s  %-8s  %-6s  %-6s   %4d      %s\n",
                a->isim,
-               durum,
+               durum_str,
                a->cikis->isim,
                a->hedef->isim,
-               a->kalan_sure > 0 ? a->kalan_sure : 0,
-               eta_s);
-
-        free(eta_s);
+               (a->durum == ARAC_YOLDA ? a->kalan_sure : 0),
+               eta);
+        free(eta);
     }
+    printf("\n");
+}
+
+void simulasyon_calistir(Simulasyon* sim) {
+    while (!sim_bitti(sim)) {
+        ekran_temizle();
+        yazdir(sim);
+
+        gezegen_saatleri_ilerlet(sim);
+        zaman_ilerlet(sim->zaman, 1);
+        araclari_guncelle(sim);
+
+        sleep_ms(100);
+    }
+
+    ekran_temizle();
+    yazdir(sim);
+    printf("SIMULASYON TAMAMLANDI: Tum gemiler hedefe ulasti veya imha oldu.\n");
 }

@@ -1,11 +1,7 @@
 #ifndef DOSYA_OKUMA_H
 #define DOSYA_OKUMA_H
-
-#include "Kisi.h"
-#include "Gezegen.h"
-#include "UzayGemisi.h"
 #include "Simulasyon.h"
-
-void veri_oku(const char* dosya_yolu, Simulasyon* sim);
-
-#endif 
+void gezegen_dosya_oku(const char* path, Simulasyon* sim);
+void arac_dosya_oku   (const char* path, Simulasyon* sim);
+void kisi_dosya_oku   (const char* path, Simulasyon* sim);
+#endif
