@@ -1,4 +1,12 @@
-
+/**
+*
+* @author Gökçe Çiçek Yağmur - gokce.yagmur@ogr.sakarya.edu.tr
+* @since Mayıs 2025
+* <p>
+* Simülasyonu başlatır ve gezegen, araç ve kişi dosyalarını okur. Herhangi bir hata durumunda
+* hata mesajı verir.
+* </p>
+*/
 #include "Simulasyon.h"
 #include <stdio.h>
 #include <stdlib.h>

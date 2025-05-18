@@ -1,4 +1,11 @@
-
+/**
+*
+* @author Gökçe Çiçek Yağmur - gokce.yagmur@ogr.sakarya.edu.tr
+* @since Mayıs 2025
+* <p>
+* Cüce Gezegen header dosyası. Cüce gezegen yapısı ve fonksiyonları burada tanımlanır.
+* </p>
+*/
 #ifndef CUCE_GEZEGEN_H
 #define CUCE_GEZEGEN_H
 

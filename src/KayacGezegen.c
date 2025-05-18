@@ -1,4 +1,11 @@
-
+/**
+*
+* @author Gökçe Çiçek Yağmur - gokce.yagmur@ogr.sakarya.edu.tr
+* @since Mayıs 2025
+* <p>
+* Kayaç Gezegen yapısı ve fonksiyonları; Gezegen yapısının bir alt yapısıdır.
+* </p>
+*/
 #include "KayacGezegen.h"
 #include "Gezegen.h"
 
